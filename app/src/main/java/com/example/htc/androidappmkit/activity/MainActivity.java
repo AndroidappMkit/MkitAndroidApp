@@ -13,6 +13,9 @@ import android.widget.Toast;
 import com.example.htc.androidappmkit.R;
 import com.example.htc.androidappmkit.helper.SQLiteHandler;
 import com.example.htc.androidappmkit.helper.SessionManager;
+import com.facebook.AccessToken;
+import com.facebook.FacebookSdk;
+import com.facebook.login.LoginManager;
 
 import java.util.HashMap;
 
@@ -30,6 +33,9 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+//        fb sdk init
+        FacebookSdk.sdkInitialize(getApplicationContext());
+
         setContentView(R.layout.activity_main);
 
         
@@ -45,6 +51,7 @@ public class MainActivity extends Activity {
 
         if (!session.isLoggedIn()) {
             logoutUser();
+
         }
 
         try {
@@ -78,12 +85,17 @@ public class MainActivity extends Activity {
      * */
     private void logoutUser() {
         session.setLogin(false);
-
         db.deleteUsers();
+
+        // fb logout
+        LoginManager.getInstance().logOut();
+        AccessToken.setCurrentAccessToken(null);
 
         // Launching the login activity
         Intent intent = new Intent(MainActivity.this, LoginActivity.class);
         startActivity(intent);
         finish();
     }
+
+
 }

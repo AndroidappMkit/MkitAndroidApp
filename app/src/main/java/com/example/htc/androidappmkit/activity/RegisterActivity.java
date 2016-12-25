@@ -20,10 +20,22 @@ import com.example.htc.androidappmkit.app.AppConfig;
 import com.example.htc.androidappmkit.app.AppController;
 import com.example.htc.androidappmkit.helper.SQLiteHandler;
 import com.example.htc.androidappmkit.helper.SessionManager;
+import com.facebook.AccessToken;
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.FacebookSdk;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
+import com.facebook.Profile;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
+import com.facebook.login.widget.LoginButton;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +49,9 @@ public class RegisterActivity extends Activity {
     private ProgressDialog pDialog;
     private SessionManager session;
     private SQLiteHandler db;
+    private LoginButton fb_signup_button;
+    private CallbackManager callbackManager;
+    private String Semail, Sname, Suid, Screated_at;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -76,11 +91,13 @@ public class RegisterActivity extends Activity {
                 String password = inputPassword.getText().toString().trim();
 
                 if (!name.isEmpty() && !email.isEmpty() && !password.isEmpty()) {
-                    registerUser(name, email, password);
+                    registerUser(name, email, password,"0", "student");
+                    // Launch login activity
+                    Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                    finish();
                 } else {
-                    Toast.makeText(getApplicationContext(),
-                            "Please enter your details!", Toast.LENGTH_LONG)
-                            .show();
+                    Toast.makeText(getApplicationContext(),"Please enter your details!", Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -96,14 +113,62 @@ public class RegisterActivity extends Activity {
             }
         });
 
-    }
+/**
+ * sign up facebook
+ */
+
+        try {
+            callbackManager = CallbackManager.Factory.create();
+
+            fb_signup_button = (LoginButton) findViewById(R.id.fb_signup_button);
+            fb_signup_button.setReadPermissions("email");
+            // Callback registration
+            fb_signup_button.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
+                @Override
+                public void onSuccess(LoginResult loginResult) {
+                    Toast.makeText(getApplicationContext(), "Connexion ok", Toast.LENGTH_LONG).show();
+                    // Inserting row in users table
+                    Profile profile = Profile.getCurrentProfile();
+
+                    Suid = loginResult.getAccessToken().getUserId();
+                    Sname = profile.getName();
+                    Date today = new Date();
+                    Screated_at = today.toString();
+                    Semail = "nomail";
+                    registerUser(Sname, Semail, "st",Suid, "student");
+
+                    // fb logout
+                    FacebookSdk.sdkInitialize(getApplicationContext());
+                    LoginManager.getInstance().logOut();
+                    AccessToken.setCurrentAccessToken(null);
+
+                }
+
+                @Override
+                public void onCancel() {
+                    // App code
+                    Toast.makeText(getApplicationContext(),"Connexion Canceled", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onError(FacebookException error) {
+                    // App code
+                    Toast.makeText(getApplicationContext(),"Connexion error", Toast.LENGTH_SHORT).show();
+                    Log.e("FB loguin exeption",error.toString());
+                }
+            });
+        }catch (Exception ex)
+        {
+            Toast.makeText(getApplicationContext(),"exeption FB signup"+ex.toString(), Toast.LENGTH_SHORT).show();
+        }
+}
 
     /**
      * Function to store user in MySQL database will post params(tag, name,
      * email, password) to register url
      * */
     private void registerUser(final String name, final String email,
-                              final String password) {
+                              final String password, final String unique_id, final String profil) {
         // Tag used to cancel the request
         String tag_string_req = "req_register";
 
@@ -131,9 +196,6 @@ public class RegisterActivity extends Activity {
                         String email = user.getString("email");
                         String created_at = user
                                 .getString("created_at");
-
-                        // Inserting row in users table
-                        db.addUser(name, email, uid, created_at);
 
                         Toast.makeText(getApplicationContext(), "User successfully registered. Try login now!", Toast.LENGTH_LONG).show();
 
@@ -174,6 +236,9 @@ public class RegisterActivity extends Activity {
                 params.put("name", name);
                 params.put("email", email);
                 params.put("password", password);
+                params.put("profil", "student");
+                params.put("unique_id", String.valueOf(unique_id));
+
 
                 return params;
             }
@@ -182,7 +247,9 @@ public class RegisterActivity extends Activity {
 
         // Adding request to request queue
         AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
+
     }
+
 
     private void showDialog() {
         if (!pDialog.isShowing())
@@ -193,4 +260,16 @@ public class RegisterActivity extends Activity {
         if (pDialog.isShowing())
             pDialog.dismiss();
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        try {
+            callbackManager.onActivityResult(requestCode, resultCode, data);
+        }catch (Exception ex)
+        {
+            Toast.makeText(getApplicationContext(),"exeption onactivityResult"+ex.toString(), Toast.LENGTH_LONG).show();
+            Log.e("callbackmanager exep",ex.toString());
+        }
+    }
 }
+

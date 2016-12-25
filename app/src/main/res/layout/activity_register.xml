@@ -65,6 +65,15 @@ android:padding="10dp" >
         android:text="@string/btn_register"
         android:textColor="@color/white" />
 
+
+    <com.facebook.login.widget.LoginButton
+        android:id="@+id/fb_signup_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="30dp"
+        android:layout_marginBottom="30dp" />
+
     <!-- Link to Login Screen -->
 
     <Button
@@ -77,6 +86,9 @@ android:padding="10dp" >
         android:textAllCaps="false"
         android:textColor="@color/white"
         android:textSize="15dp" />
+
+
+
 </LinearLayout>
 
 </LinearLayout>
